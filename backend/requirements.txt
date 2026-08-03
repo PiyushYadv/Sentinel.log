@@ -3,5 +3,5 @@ uvicorn
 python-multipart
 torch
 drain3
-google-generativeai
+google-genai
 python-dotenv
