@@ -216,27 +216,26 @@ def main():
 
     # evaluate_blocks(block_predictions)
 
-    tests = [
-        ("Original", dict(rule="any")),
-        ("2 windows", dict(rule="count", min_windows=2)),
-        ("3 windows", dict(rule="count", min_windows=3)),
-        ("5%", dict(rule="percentage", percentage=0.05)),
-        ("10%", dict(rule="percentage", percentage=0.10)),
-    ]
+    # tests = [
+    #     ("Original", dict(rule="any")),
+    #     ("2 windows", dict(rule="count", min_windows=2)),
+    #     ("3 windows", dict(rule="count", min_windows=3)),
+    #     ("5%", dict(rule="percentage", percentage=0.05)),
+    #     ("10%", dict(rule="percentage", percentage=0.10)),
+    # ]
 
-    for name, params in tests:
+    # for name, params in tests:
 
-        print(f"\n===== {name} =====")
+        # print(f"\n===== {name} =====")
 
-        block_predictions = evaluate_windows(
-            model,
-            test_loader,
-            device,
-            top_k=TOP_K,
-            **params,
-        )
+    block_predictions = evaluate_windows(
+        model,
+        test_loader,
+        device,
+        top_k=TOP_K,
+    )
 
-        evaluate_blocks(block_predictions)
+    evaluate_blocks(block_predictions)
 
 
 if __name__ == "__main__":

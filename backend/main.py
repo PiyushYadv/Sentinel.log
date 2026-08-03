@@ -14,29 +14,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Load the PyTorch LSTM and Gemini API into memory once at startup
 pipeline = LogAnalysisPipeline()
 
 @app.post("/api/analyze")
 async def analyze_logs(file: UploadFile = File(...)):
-  content = await file.read()
-  log_lines = content.decode("utf-8").split("\n")
-  
-  # Run the ML inference on raw text lines
-  anomalies = pipeline.process_logs(log_lines)
-  
-  formatted_results = []
-  for anomaly in anomalies:
-    formatted_results.append({
-      "id": str(uuid.uuid4()),
-      "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-      "sequenceId": anomaly["sequenceId"],
-      "threatLevel": anomaly["threatLevel"],
-      "logPreview": anomaly["logPreview"],
-      "anomalyScore": anomaly["anomalyScore"],
-      "eventChain": anomaly["eventChain"],
-      "explanation": anomaly["explanation"],
-      "modelConfidence": round(1.0 - anomaly["anomalyScore"], 2),
-      "affectedService": anomaly["affectedService"]
-    })
-      
-  return {"status": "success", "anomalies": formatted_results}
+    content = await file.read()
+    log_lines = content.decode("utf-8").split("\n")
+    
+    # Run the ML inference on raw text lines (now with BlockId sessionization!)
+    anomalies = pipeline.process_logs(log_lines)
+    
+    formatted_results = []
+    for anomaly in anomalies:
+        formatted_results.append({
+            "id": str(uuid.uuid4()),
+            # Note: For MVP, we assign the current time. For V2, we could parse this from the log line!
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "sequenceId": anomaly["sequenceId"], 
+            "threatLevel": anomaly["threatLevel"],
+            "logPreview": anomaly["logPreview"],
+            "anomalyScore": anomaly["anomalyScore"],
+            "eventChain": anomaly["eventChain"],
+            "explanation": anomaly["explanation"],
+            "modelConfidence": anomaly["confidence"], # Uses the exact value from PyTorch now
+            "affectedService": anomaly["affectedService"]
+        })
+        
+    return {"status": "success", "anomalies": formatted_results}
