@@ -1,6 +1,10 @@
+"use client";
+
+import { Markdown } from "@/components/shared/Markdown";
 import { ThreatBadge } from "@/components/shared/ThreatBadge";
+import { useExplainAnomaly } from "@/lib/api";
 import { LogEntry } from "@/lib/types";
-import { AlertTriangle, Cpu, Eye, X } from "lucide-react";
+import { AlertTriangle, Cpu, Eye, RefreshCw, Sparkles, X } from "lucide-react";
 
 export function LLMSidebar({
   log,
@@ -9,6 +13,14 @@ export function LLMSidebar({
   log: LogEntry | null;
   onClose: () => void;
 }) {
+  const explainMutation = useExplainAnomaly();
+  // One mutation instance serves every row; only reflect its state on the row it was fired for
+  // Show the user's actual log lines; fall back to templates for older/demo entries
+  const eventLines = log?.rawEventChain ?? log?.eventChain ?? [];
+  const isForThisLog = !!log && explainMutation.variables?.id === log.id;
+  const isGenerating = isForThisLog && explainMutation.isPending;
+  const explainError = isForThisLog && explainMutation.isError ? explainMutation.error : null;
+
   return (
     <aside
       className={`fixed top-14 right-0 bottom-0 w-110 bg-[#0a0f16] border-l border-border flex flex-col overflow-hidden transition-transform duration-300 ease-out z-40 ${log ? "translate-x-0" : "translate-x-full"}`}
@@ -92,21 +104,22 @@ export function LLMSidebar({
                   Event Sequence
                 </p>
                 <div className="flex flex-col gap-0">
-                  {log.eventChain.map((event, idx) => (
+                  {eventLines.map((event, idx) => (
                     <div key={idx} className="flex items-stretch gap-3">
                       <div className="flex flex-col items-center">
                         <div
-                          className={`w-2 h-2 rounded-full mt-1 shrink-0 ${idx === 0 ? "bg-[#6b7fa0]" : idx === log.eventChain.length - 1 ? "bg-[#ff3b4e] shadow-[0_0_8px_#ff3b4e60]" : "bg-[#00d4f5]"}`}
+                          className={`w-2 h-2 rounded-full mt-1 shrink-0 ${idx === 0 ? "bg-[#6b7fa0]" : idx === eventLines.length - 1 ? "bg-[#ff3b4e] shadow-[0_0_8px_#ff3b4e60]" : "bg-[#00d4f5]"}`}
                         />
-                        {idx < log.eventChain.length - 1 && (
+                        {idx < eventLines.length - 1 && (
                           <div className="w-px flex-1 bg-border my-1" />
                         )}
                       </div>
                       <div
-                        className={`flex-1 mb-2 py-1.5 px-3 rounded text-xs font-mono border ${idx === log.eventChain.length - 1 ? "bg-[#ff3b4e]/8 border-[#ff3b4e]/20 text-[#ff3b4e]" : "bg-[#0d1218] border-border text-foreground"}`}
+                        title={log.eventChain[idx]}
+                        className={`flex-1 min-w-0 mb-2 py-1.5 px-3 rounded text-xs font-mono break-words border ${idx === eventLines.length - 1 ? "bg-[#ff3b4e]/8 border-[#ff3b4e]/20 text-[#ff3b4e]" : "bg-[#0d1218] border-border text-foreground"}`}
                       >
                         {event}
-                        {idx < log.eventChain.length - 1 && (
+                        {idx < eventLines.length - 1 && (
                           <span className="text-[#6b7fa0] ml-2">↓</span>
                         )}
                       </div>
@@ -126,9 +139,55 @@ export function LLMSidebar({
                 </div>
                 <div className="bg-[#0d1218] border border-[#a78bfa]/20 rounded-lg p-4 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-[#a78bfa]/40 to-transparent" />
-                  <p className="text-sm text-[#c4b5e8] leading-relaxed">
-                    {log.explanation}
-                  </p>
+                  {isGenerating ? (
+                    <div className="space-y-2.5 animate-pulse" aria-label="Generating diagnostic">
+                      <div className="h-3 rounded bg-[#a78bfa]/15 w-full" />
+                      <div className="h-3 rounded bg-[#a78bfa]/15 w-11/12" />
+                      <div className="h-3 rounded bg-[#a78bfa]/15 w-4/5" />
+                      <div className="h-3 rounded bg-[#a78bfa]/15 w-2/3" />
+                      <p className="pt-1 text-[11px] font-mono text-[#a78bfa]/70">
+                        Querying Gemini...
+                      </p>
+                    </div>
+                  ) : log.explanation ? (
+                    <div className="text-sm text-[#c4b5e8] leading-relaxed">
+                      <Markdown>{log.explanation}</Markdown>
+                      {explainError && (
+                        <p className="mt-3 text-xs text-[#ff3b4e] flex items-center gap-1.5">
+                          <AlertTriangle size={12} />
+                          {explainError.message}
+                        </p>
+                      )}
+                      {/* Lets users replace an offline fallback once Gemini is reachable again */}
+                      <button
+                        onClick={() => explainMutation.mutate(log)}
+                        className="mt-3 flex items-center gap-1.5 text-[11px] font-mono text-[#a78bfa]/70 hover:text-[#c4b5e8] transition-colors"
+                      >
+                        <RefreshCw size={11} />
+                        Regenerate
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-start gap-3">
+                      <p className="text-sm text-[#6b7fa0] leading-relaxed">
+                        No diagnostic yet. Ask Gemini to explain why the LSTM
+                        flagged this sequence.
+                      </p>
+                      {explainError && (
+                        <p className="text-xs text-[#ff3b4e] flex items-center gap-1.5">
+                          <AlertTriangle size={12} />
+                          {explainError.message}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => explainMutation.mutate(log)}
+                        className="flex items-center gap-2 px-4 py-2 rounded border border-[#a78bfa]/40 bg-[#a78bfa]/10 text-[#c4b5e8] text-xs font-semibold hover:bg-[#a78bfa]/20 transition-colors"
+                      >
+                        <Sparkles size={12} />
+                        {explainError ? "Retry AI Diagnostic" : "Generate AI Diagnostic"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

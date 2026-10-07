@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   BarChart3,
   ArrowRight,
+  X,
 } from "lucide-react";
 
 import { ProcessingScreen } from "@/components/shared/ProcessingScreen";
@@ -24,6 +25,7 @@ import { Logo } from "@/components/shared/Logo";
 import { ThreatBadge } from "@/components/shared/ThreatBadge";
 import { logEntries } from "@/lib/mockData";
 import { MiniChart } from "@/components/home/MiniChart";
+import { useAnalyzeLogs } from "@/lib/api";
 
 // ── Data Arrays ─────────────────────────────────────────────────────────────
 
@@ -104,14 +106,21 @@ const testimonials: { quote: string; name: string; role: string }[] = [
 
 export default function HomePage() {
   const router = useRouter();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const analyzeMutation = useAnalyzeLogs({
+    onSuccess: () => router.push("/dashboard"),
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) analyzeMutation.mutate(file);
+    // Reset so selecting the same file again still triggers onChange
+    e.target.value = "";
+  };
 
   const handleUploadClick = () => {
-    // In the future, this will trigger a file input dialog first
-    setIsProcessing(true);
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 4500);
+    analyzeMutation.reset();
+    fileInputRef.current?.click();
   };
 
   const handleViewDashboard = () => {
@@ -120,7 +129,32 @@ export default function HomePage() {
 
   return (
     <div className="dark min-h-screen bg-background text-foreground font-['Inter',sans-serif]">
-      {isProcessing && <ProcessingScreen />}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".log,.txt,.csv"
+      />
+
+      {analyzeMutation.isPending && <ProcessingScreen />}
+
+      {analyzeMutation.isError && (
+        <div
+          role="alert"
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded border border-[#ff3b4e]/30 bg-[#1a0b0f] text-sm text-[#ff3b4e] shadow-2xl max-w-[90vw]"
+        >
+          <AlertTriangle size={14} className="shrink-0" />
+          <span>Analysis failed: {analyzeMutation.error.message}</span>
+          <button
+            onClick={() => analyzeMutation.reset()}
+            className="text-[#6b7fa0] hover:text-foreground"
+            aria-label="Dismiss error"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-8 border-b border-border bg-[#07090d]/95 backdrop-blur-sm">
@@ -143,7 +177,7 @@ export default function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleViewDashboard}
+            onClick={handleUploadClick}
             className="flex items-center gap-2 px-4 py-2 rounded bg-[#00d4f5] text-[#07090d] text-sm font-semibold hover:bg-[#00bfdf] transition-colors"
           >
             Upload Logs

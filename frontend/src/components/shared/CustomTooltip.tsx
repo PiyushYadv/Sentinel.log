@@ -12,7 +12,9 @@ export function CustomTooltip({
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#0d1218] border border-white/10 rounded px-3 py-2 shadow-xl">
-      <p className="text-[#6b7fa0] text-xs font-mono mb-1">{label}</p>
+      <p className="text-[#6b7fa0] text-xs font-mono mb-1">
+        {payload[0].payload?.range ?? label}
+      </p>
       <p className="text-[#00d4f5] text-sm font-mono font-medium">
         {payload[0].value} anomalies
       </p>

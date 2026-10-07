@@ -73,7 +73,7 @@ export function ProcessingScreen() {
               className={step >= 2 ? "text-foreground" : "text-[#6b7fa0]/40"}
             >
               {step >= 2
-                ? "[ ] Generating LLM diagnostics..."
+                ? "[ ] Preparing dashboard..."
                 : "[ ] Awaiting flagged sequences..."}
             </span>
           </div>
