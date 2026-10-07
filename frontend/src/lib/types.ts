@@ -8,8 +8,14 @@ export interface LogEntry {
   threatLevel: ThreatLevel;
   logPreview: string;
   anomalyScore: number;
+  // Parsed Drain3 templates (fed to the model and the LLM)
   eventChain: string[];
-  explanation: string;
+  // The original uploaded log lines for the same window, in the same order
+  rawEventChain?: string[];
+  actualEvent?: string;
+  expectedEvents?: string[];
+  // null until the user requests an on-demand LLM diagnostic
+  explanation: string | null;
   modelConfidence: number;
   affectedService: string;
 }

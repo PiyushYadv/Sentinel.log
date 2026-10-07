@@ -1,9 +1,11 @@
 "use client";
 
 import { Logo } from "@/components/shared/Logo";
-import { ChevronDown, Upload } from "lucide-react";
+import { ProcessingScreen } from "@/components/shared/ProcessingScreen";
+import { useAnalyzeLogs } from "@/lib/api";
+import { AlertTriangle, ChevronDown, Upload, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export function DashboardHeader({
   activeModel,
@@ -13,7 +15,32 @@ export function DashboardHeader({
   setActiveModel: (model: "LSTM" | "GRU") => void;
 }) {
   const [modelDropdown, setModelDropdown] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const analyzeMutation = useAnalyzeLogs();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) analyzeMutation.mutate(file);
+    // Reset so selecting the same file again still triggers onChange
+    e.target.value = "";
+  };
+
   return (
+    <>
+    {analyzeMutation.isPending && <ProcessingScreen />}
+    {analyzeMutation.isError && (
+      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded border border-[#ff3b4e]/30 bg-[#1a0b0f] text-sm text-[#ff3b4e] shadow-2xl">
+        <AlertTriangle size={14} />
+        Upload failed: {analyzeMutation.error.message}
+        <button
+          onClick={() => analyzeMutation.reset()}
+          className="text-[#6b7fa0] hover:text-foreground"
+          aria-label="Dismiss error"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    )}
     <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 border-b border-border bg-[#07090d]/95 backdrop-blur-sm">
       <Link href={"/"}>
         <Logo />
@@ -49,10 +76,22 @@ export function DashboardHeader({
         )}
       </div>
 
-      <button className="flex items-center gap-2 px-4 py-2 rounded bg-[#00d4f5] text-[#07090d] text-sm font-semibold hover:bg-[#00bfdf] transition-colors">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".log,.txt,.csv"
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={analyzeMutation.isPending}
+        className="flex items-center gap-2 px-4 py-2 rounded bg-[#00d4f5] text-[#07090d] text-sm font-semibold hover:bg-[#00bfdf] transition-colors disabled:opacity-60"
+      >
         <Upload size={14} />
-        New Upload
+        {analyzeMutation.isPending ? "Analyzing..." : "New Upload"}
       </button>
     </header>
+    </>
   );
 }
