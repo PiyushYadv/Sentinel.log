@@ -1,0 +1,11 @@
+# Used when building deploy/huggingface/Dockerfile with the repo root as context
+.git
+ml
+**/venv
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+**/*.tsbuildinfo
