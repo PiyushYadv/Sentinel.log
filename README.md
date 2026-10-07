@@ -9,7 +9,7 @@ Flagged anomalies are presented in a responsive Next.js dashboard and contextual
 ## 🚀 Key Achievements & Impact
 
 - **High-Throughput Processing:** Automated the detection of abnormal system behaviors, processing over **100,000** raw server logs in **~5 seconds**, by building a FastAPI backend that streams text data through a Drain3 template parser and a PyTorch LSTM model.
-- **Precision Anomaly Detection:** Identified irregular log sequences with a **~92%** recall rate and **~87%** precision, by training a PyTorch LSTM on sliding windows of log events to flag execution paths that fell outside the top-5 expected predictions.
+- **Precision Anomaly Detection:** Identified irregular log sequences with a **~87.60%** recall rate and **~96.26%** precision, by training a PyTorch LSTM on sliding windows of log events to flag execution paths that fell outside the top-4 expected predictions.
 - **AI-Powered Diagnostics:** Reduced the estimated time required to interpret security anomalies from manual multi-minute debugging to **~3 seconds**, by developing a Next.js dashboard that visualizes anomaly clusters and queries the **Gemini API** for plain-English diagnostics.
 
 ---
