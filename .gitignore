@@ -4,9 +4,9 @@ data/
 logs/
 *.csv
 /frontend/node_modules
-package-lock.json
 /frontend/.next
-/ml/__pycache__
+__pycache__/
+*.pyc
 .vscode
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
