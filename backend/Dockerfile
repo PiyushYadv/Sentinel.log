@@ -16,9 +16,11 @@ COPY main.py ml_service.py drain3.ini event_templates.json event_mapping.json ls
 RUN useradd --create-home appuser
 USER appuser
 
+# Hosts like Render inject PORT; docker-compose and local runs fall back to 8000
+ENV PORT=8000
 EXPOSE 8000
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=4)"
+  CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://localhost:{os.environ[\"PORT\"]}/api/health', timeout=4)"
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port \"$PORT\""]

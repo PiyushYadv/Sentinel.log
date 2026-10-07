@@ -25,7 +25,7 @@ import { Logo } from "@/components/shared/Logo";
 import { ThreatBadge } from "@/components/shared/ThreatBadge";
 import { logEntries } from "@/lib/mockData";
 import { MiniChart } from "@/components/home/MiniChart";
-import { useAnalyzeLogs } from "@/lib/api";
+import { useAnalyzeLogs, useBackendWarmup } from "@/lib/api";
 
 // ── Data Arrays ─────────────────────────────────────────────────────────────
 
@@ -107,6 +107,7 @@ const testimonials: { quote: string; name: string; role: string }[] = [
 export default function HomePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  useBackendWarmup();
   const analyzeMutation = useAnalyzeLogs({
     onSuccess: () => router.push("/dashboard"),
   });

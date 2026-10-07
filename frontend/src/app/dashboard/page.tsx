@@ -8,7 +8,7 @@ import { AnomalyChart } from "@/components/dashboard/AnomalyChart";
 import { ConfusionMatrix } from "@/components/dashboard/ConfusionMatrix";
 import { LogTable } from "@/components/dashboard/LogTable";
 import { LLMSidebar } from "@/components/dashboard/LLMSidebar";
-import { useAnomalies } from "@/lib/api";
+import { useAnomalies, useBackendWarmup } from "@/lib/api";
 
 export default function DashboardPage() {
   // State is lifted here so the table can update the sidebar
@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { data } = useAnomalies();
+  useBackendWarmup();
   const anomalies = data?.anomalies ?? [];
   const selectedLog = anomalies.find((a) => a.id === selectedId) ?? null;
 

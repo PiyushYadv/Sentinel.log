@@ -1,0 +1,15 @@
+# Render Blueprint for the FastAPI + PyTorch backend.
+# The Next.js frontend is deployed separately on Vercel (root directory: frontend).
+services:
+  - type: web
+    name: sentinel-log-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      # Prompted for once when the Blueprint is created; never stored in this file
+      - key: GEMINI_API_KEY
+        sync: false

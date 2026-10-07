@@ -1,11 +1,15 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { logEntries as mockLogEntries } from "@/lib/mockData";
 import { LogEntry } from "@/lib/types";
 
 export const ANOMALIES_QUERY_KEY = ["log_anomalies"] as const;
 const STORAGE_KEY = "sentinel.analysis";
+
+// Hosted proxies cap request bodies (Vercel Functions: 4.5 MB). Unset = no client-side limit.
+const MAX_UPLOAD_MB = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB) || null;
 
 export interface AnalysisResult {
   anomalies: LogEntry[];
@@ -38,12 +42,22 @@ async function postJson<T>(url: string, init: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 413) {
+      throw new Error("File is too large for this deployment. Try a smaller log file.");
+    }
     throw new Error(data?.error ?? `Request failed with status ${res.status}`);
   }
   return data as T;
 }
 
 // ── Hooks ───────────────────────────────────────────────────────────────────
+
+// Fire-and-forget ping so a sleeping free-tier backend starts booting before the first upload
+export function useBackendWarmup() {
+  useEffect(() => {
+    fetch("/api/health", { cache: "no-store" }).catch(() => {});
+  }, []);
+}
 
 // Last analysis from the cache, else sessionStorage (survives refresh), else demo data
 export function useAnomalies() {
@@ -61,6 +75,11 @@ export function useAnalyzeLogs({ onSuccess }: { onSuccess?: () => void } = {}) {
 
   return useMutation({
     mutationFn: async (file: File) => {
+      if (MAX_UPLOAD_MB && file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        throw new Error(
+          `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)} MB; the limit here is ${MAX_UPLOAD_MB} MB.`,
+        );
+      }
       const formData = new FormData();
       formData.append("file", file);
       // Call our Next.js proxy, NOT FastAPI directly

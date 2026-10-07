@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 
 export function ProcessingScreen() {
   const [step, setStep] = useState(0);
+  const [slow, setSlow] = useState(false);
 
   // Fake terminal output progression for visual effect
   useEffect(() => {
     const timer1 = setTimeout(() => setStep(1), 1200); // Drain3 Parsing
     const timer2 = setTimeout(() => setStep(2), 2800); // LSTM Inference
+    // Analysis normally takes well under a second; a long wait means the backend is cold-starting
+    const timer3 = setTimeout(() => setSlow(true), 8000);
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
+      clearTimeout(timer3);
     };
   }, []);
 
@@ -78,6 +82,13 @@ export function ProcessingScreen() {
             </span>
           </div>
         </div>
+
+        {slow && (
+          <p className="mt-5 text-[11px] leading-relaxed text-[#6b7fa0]">
+            The ML backend runs on a free tier and sleeps when idle. Waking it
+            up can take up to a minute on the first request.
+          </p>
+        )}
 
         <div className="mt-6 h-1 w-full bg-[#111827] rounded-full overflow-hidden">
           <div
